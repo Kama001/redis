@@ -7,6 +7,7 @@ import (
 	"redis/config"
 	"redis/core"
 	"syscall"
+	"errors"
 )
 
 func StartTCPServer() {
@@ -83,32 +84,34 @@ func StartTCPServer() {
 				log.Printf("New client %d socket created", socketClientEvent.Fd)
 				log.Printf("Number of connected clients : %d", con_clients)
 			} else {
-				// buf := make([]byte, 1024) // Create a buffer to store incoming data
-				// n, err := syscall.Read(int(events[i].Fd), buf) // Read from the client socket
 				comm := core.FDComm{Fd: int(events[i].Fd)}
-				cmds, err := readCommands(comm)
+				_, err := readCommands(comm)
 				if err != nil {
 					if err == syscall.EAGAIN || err == syscall.EWOULDBLOCK {
 						// No data available or socket would block, skip this iteration
 						continue
+					} else if err.Error() == "no data" {
+						log.Printf("Client socket %d closed the connection", comm.Fd)
+					} else {
+						log.Println("Error reading from client:", err)
 					}
-					log.Println("Error reading from client:", err)
 					syscall.Close(int(events[i].Fd)) // Close the connection on error
 					continue
 				}
-				// Print the data received from the client
-				// log.Printf("Received from client %d: %s\n", int(events[i].Fd), string(buf[:n]))
 			}
 		}
 	}
 }
 
-func readCommands(f FDComm) (core.RedisCmds, error) {
+func readCommands(f core.FDComm) (core.RedisCmds, error) {
 	buf := make([]byte, 512)
-	n, err := f.Read(buf)
-	if err != nil {
+	n, err := f.Read(buf[:])
+	if n == 0 {
+		return nil, errors.New("no data")
+	}
+	if err != nil{
 		return nil, err
 	}
-	log.Printf("Received from client %d: %s\n", f.Fd, string(buf[:n]))
+	log.Printf("Received from client %d: %s", f.Fd, string(buf[:n]))
 	return nil, nil
 }
