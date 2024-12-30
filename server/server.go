@@ -7,7 +7,7 @@ import (
 	"redis/config"
 	"redis/core"
 	"syscall"
-	"errors"
+//	"errors"
 )
 
 func StartTCPServer() {
@@ -61,7 +61,8 @@ func StartTCPServer() {
 	}
 	fmt.Println("Starting redis server.....")
 	for {
-		nevents, e := syscall.EpollWait(epollFD, events[:], 5)
+		fmt.Println("looking for events.....")
+		nevents, e := syscall.EpollWait(epollFD, events[:], -1)
 		if e != nil {
 			continue
 		}
@@ -84,8 +85,9 @@ func StartTCPServer() {
 				log.Printf("New client %d socket created", socketClientEvent.Fd)
 				log.Printf("Number of connected clients : %d", con_clients)
 			} else {
+				fmt.Println("Started receiving data.....")
 				comm := core.FDComm{Fd: int(events[i].Fd)}
-				_, err := readCommands(comm)
+				cmds, err := readCommands(comm)
 				if err != nil {
 					if err == syscall.EAGAIN || err == syscall.EWOULDBLOCK {
 						// No data available or socket would block, skip this iteration
@@ -98,20 +100,49 @@ func StartTCPServer() {
 					syscall.Close(int(events[i].Fd)) // Close the connection on error
 					continue
 				}
+				fmt.Println(cmds)
 			}
 		}
 	}
 }
 
+func toArrayString(ai []interface{}) ([]string, error) {
+	var as []string = make([]string, len(ai))
+	for i := range ai {
+		as[i] = ai[i].(string)
+	}
+	return as, nil
+}
+
 func readCommands(f core.FDComm) (core.RedisCmds, error) {
 	buf := make([]byte, 512)
 	n, err := f.Read(buf[:])
-	if n == 0 {
-		return nil, errors.New("no data")
-	}
-	if err != nil{
+	if err != nil {
 		return nil, err
 	}
-	log.Printf("Received from client %d: %s", f.Fd, string(buf[:n]))
-	return nil, nil
+	fmt.Println("Received data is:", string(buf))
+	args, err := core.Parser(buf[:n])
+	fmt.Println("Parsed data is: ", args)
+	//if n == 0 {
+	//	return nil, errors.New("no data")
+	//}
+	if err != nil {
+		// fmt.Println("connection closed error")
+		// fmt.Println(err.Error())
+		return nil, err
+	}
+	var cmds []*core.RedisCmd = make([]*core.RedisCmd, 0)
+	for _, arg := range args {
+		tokens, err := toArrayString(arg.([]interface{}))
+		if err != nil {
+			return nil, err
+		}
+		cmds = append(cmds, &core.RedisCmd{
+			Cmd:  tokens[0],
+			Args: tokens[1:],
+		})
+	}
+	fmt.Println("fetched the cmds.....")
+	// log.Printf("Received from client %d: %s", f.Fd, string(buf[:n]))
+	return cmds, nil
 }
