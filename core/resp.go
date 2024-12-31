@@ -80,15 +80,20 @@ func Parser(data []byte) ([]interface{}, error) {
 }
 
 func encodeString(v string) []byte {
-	return []byte(fmt.Sprintf("%d\r\n%s\r\n", len(v), v))
+	fmt.Println("received string is ", v)
+	es := fmt.Sprintf("$%d\r\n%s\r\n", len(v), v)
+	fmt.Println("encoded string is ", es)
+	return []byte(fmt.Sprintf("$%d\r\n%s\r\n", len(v), v))
 }
 
 func Encode(value interface{}, isSimple bool) []byte {
 	switch v := value.(type) {
 	case string:
 		if isSimple {
+			fmt.Println("got PING!!")
 			return []byte(fmt.Sprintf("+%s\r\n", v))
 		} else {
+			fmt.Println("not simple string.....")
 			return encodeString(v)
 		}
 	default:
