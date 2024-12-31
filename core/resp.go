@@ -2,7 +2,7 @@ package core
 
 import (
 	"errors"
-//	"fmt"
+	"fmt"
 )
 
 // 0 1  2  3 4
@@ -60,12 +60,12 @@ func ParseSymbol(data []byte) (interface{}, int, error) {
 }
 
 func Parser(data []byte) ([]interface{}, error) {
-//	fmt.Println("no of bytes received when connection is closed: ", len(data))
+	//	fmt.Println("no of bytes received when connection is closed: ", len(data))
 	if len(data) == 0 {
-//		fmt.Println("error generated!!")
+		//		fmt.Println("error generated!!")
 		return nil, errors.New("no data")
 	}
-//	fmt.Println("error not generted")
+	//	fmt.Println("error not generted")
 	var args []interface{} = make([]interface{}, 0)
 	var index int = 0
 	for index < len(data) {
@@ -77,4 +77,21 @@ func Parser(data []byte) ([]interface{}, error) {
 		index += delta
 	}
 	return args, nil
+}
+
+func encodeString(v string) []byte {
+	return []byte(fmt.Sprintf("%d\r\n%s\r\n", len(v), v))
+}
+
+func Encode(value interface{}, isSimple bool) []byte {
+	switch v := value.(type) {
+	case string:
+		if isSimple {
+			return []byte(fmt.Sprintf("+%s\r\n", v))
+		} else {
+			return encodeString(v)
+		}
+	default:
+		return RESP_NIL
+	}
 }

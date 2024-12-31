@@ -153,6 +153,7 @@ func readCommands(f core.FDComm) (core.RedisCmds, error) {
 }
 
 func respond(cmds core.RedisCmds, f core.FDComm) {
-	f.Write([]byte("+PONG\r\n"))
-	fmt.Println("Responded with pong.....")
+	core.EvalAndRespond(cmds, f)
+	// f.Write([]byte("+PONG\r\n"))
+	// fmt.Println("Responded with pong.....")
 }
