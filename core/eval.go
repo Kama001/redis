@@ -27,6 +27,8 @@ func EvalAndRespond(cmds RedisCmds, f FDComm) {
 		switch cmd.Cmd {
 		case "PING":
 			buf.Write(evalPing(cmd.Args))
+		default:
+			buf.Write(evalPing(cmd.Args))
 		}
 	}
 	f.Write(buf.Bytes())
