@@ -7,7 +7,7 @@ import (
 	"redis/config"
 	"redis/core"
 	"syscall"
-//	"errors"
+	// "errors"
 )
 
 func StartTCPServer() {
@@ -100,7 +100,12 @@ func StartTCPServer() {
 					syscall.Close(int(events[i].Fd)) // Close the connection on error
 					continue
 				}
-				fmt.Println(cmds)
+				// fmt.Println(cmds)
+				for _, cmd := range cmds {
+					fmt.Println("Recieved command is: ", cmd.Cmd)
+					fmt.Println("Recieved args are: ", cmd.Args)
+				}
+				respond(cmds, comm)
 			}
 		}
 	}
@@ -145,4 +150,9 @@ func readCommands(f core.FDComm) (core.RedisCmds, error) {
 	fmt.Println("fetched the cmds.....")
 	// log.Printf("Received from client %d: %s", f.Fd, string(buf[:n]))
 	return cmds, nil
+}
+
+func respond(cmds core.RedisCmds, f core.FDComm) {
+	f.Write([]byte("+PONG\r\n"))
+	fmt.Println("Responded with pong.....")
 }
