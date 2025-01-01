@@ -60,12 +60,9 @@ func ParseSymbol(data []byte) (interface{}, int, error) {
 }
 
 func Parser(data []byte) ([]interface{}, error) {
-	//	fmt.Println("no of bytes received when connection is closed: ", len(data))
 	if len(data) == 0 {
-		//		fmt.Println("error generated!!")
 		return nil, errors.New("no data")
 	}
-	//	fmt.Println("error not generted")
 	var args []interface{} = make([]interface{}, 0)
 	var index int = 0
 	for index < len(data) {
@@ -80,9 +77,6 @@ func Parser(data []byte) ([]interface{}, error) {
 }
 
 func encodeString(v string) []byte {
-	fmt.Println("received string is ", v)
-	es := fmt.Sprintf("$%d\r\n%s\r\n", len(v), v)
-	fmt.Println("encoded string is ", es)
 	return []byte(fmt.Sprintf("$%d\r\n%s\r\n", len(v), v))
 }
 
@@ -90,10 +84,8 @@ func Encode(value interface{}, isSimple bool) []byte {
 	switch v := value.(type) {
 	case string:
 		if isSimple {
-			fmt.Println("got PING!!")
 			return []byte(fmt.Sprintf("+%s\r\n", v))
 		} else {
-			fmt.Println("not simple string.....")
 			return encodeString(v)
 		}
 	default:

@@ -61,7 +61,6 @@ func StartTCPServer() {
 	}
 	fmt.Println("Starting redis server.....")
 	for {
-		fmt.Println("looking for events.....")
 		nevents, e := syscall.EpollWait(epollFD, events[:], -1)
 		if e != nil {
 			continue
@@ -85,7 +84,6 @@ func StartTCPServer() {
 				log.Printf("New client %d socket created", socketClientEvent.Fd)
 				log.Printf("Number of connected clients : %d", con_clients)
 			} else {
-				fmt.Println("Started receiving data.....")
 				comm := core.FDComm{Fd: int(events[i].Fd)}
 				cmds, err := readCommands(comm)
 				if err != nil {
@@ -98,13 +96,11 @@ func StartTCPServer() {
 						log.Println("Error reading from client:", err)
 					}
 					syscall.Close(int(events[i].Fd)) // Close the connection on error
+					con_clients--
+					log.Printf("Number of connected clients : %d", con_clients)
 					continue
 				}
-				// fmt.Println(cmds)
-				for _, cmd := range cmds {
-					fmt.Println("Recieved command is: ", cmd.Cmd)
-					fmt.Println("Recieved args are: ", cmd.Args)
-				}
+
 				respond(cmds, comm)
 			}
 		}
@@ -125,15 +121,9 @@ func readCommands(f core.FDComm) (core.RedisCmds, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("Received data is:", string(buf))
+	log.Printf("Received data is: %s", string(buf))
 	args, err := core.Parser(buf[:n])
-	fmt.Println("Parsed data is: ", args)
-	//if n == 0 {
-	//	return nil, errors.New("no data")
-	//}
 	if err != nil {
-		// fmt.Println("connection closed error")
-		// fmt.Println(err.Error())
 		return nil, err
 	}
 	var cmds []*core.RedisCmd = make([]*core.RedisCmd, 0)
@@ -147,13 +137,9 @@ func readCommands(f core.FDComm) (core.RedisCmds, error) {
 			Args: tokens[1:],
 		})
 	}
-	fmt.Println("fetched the cmds.....")
-	// log.Printf("Received from client %d: %s", f.Fd, string(buf[:n]))
 	return cmds, nil
 }
 
 func respond(cmds core.RedisCmds, f core.FDComm) {
 	core.EvalAndRespond(cmds, f)
-	// f.Write([]byte("+PONG\r\n"))
-	// fmt.Println("Responded with pong.....")
 }
